@@ -1,32 +1,41 @@
 /** Landing page. */
 
 import { useNavigate } from "react-router-dom";
-import MarketingLayout from "../../../app/layouts/MarketingLayout.jsx";
+import Navbar from "../../../shared/components/Navbar.jsx";
 
 export default function LandingPage() {
   /** Render landing page. */
   const navigate = useNavigate();
 
   return (
-    <MarketingLayout>
-      <section className="hero">
-        <h1 className="hero__title">
-          <span className="grad grad--pink">Classifique</span> seus e-mails.
-          <br />
-          <span className="grad grad--blue">Rápido</span> e{" "}
-          <span className="grad grad--green">Inteligente</span>.
-        </h1>
+    <div className="page page--marketing">
+      <Navbar variant="home" />
 
-        <p className="hero__subtitle">
-          Produtivo ou improdutivo, com sugestão de resposta automática em segundos.
-        </p>
+      <main className="main main--center">
+        <div className="hero">
+          <h1 className="hero__title">
+            <span className="gradPink">Classifique</span> seus e-mails.
+            <br />
+            <span className="gradRose">Rápido</span> e{" "}
+            <span className="gradOrange">Inteligente</span>.
+          </h1>
 
-        <div className="hero__actions">
-          <button className="btn btn--primary btn--lg" onClick={() => navigate("/auth?mode=login")}>
-            Entrar
-          </button>
+          <p className="hero__subtitle">
+            Produtivo ou improdutivo, com sugestão de resposta automática em
+            segundos.
+          </p>
+
+          <div className="hero__actions">
+            <button
+              className="btn btn--gradient btn--lg"
+              type="button"
+              onClick={() => navigate("/auth?mode=login")}
+            >
+              Entrar
+            </button>
+          </div>
         </div>
-      </section>
-    </MarketingLayout>
+      </main>
+    </div>
   );
 }
