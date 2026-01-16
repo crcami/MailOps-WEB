@@ -1,6 +1,6 @@
 import { clearSession, getAuthToken } from "./storage.jsx";
 
-const DEFAULT_BASE_URL = "http://localhost:5173";
+const DEFAULT_BASE_URL = import.meta.env.DEV ? "http://localhost:8000" : "";
 
 function getApiBaseUrl() {
   const raw = String(import.meta.env.VITE_API_BASE_URL || "").trim();
