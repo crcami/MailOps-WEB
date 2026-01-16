@@ -1,13 +1,17 @@
-/** App layout. */
-
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Tag from "../../shared/components/Tag.jsx";
 import { safeFetchMe } from "../../shared/lib/auth.js";
-import { clearSession, getCurrentUser, getAuthToken, setCurrentUser } from "../../shared/lib/storage.jsx";
+import logo from "../../assets/images/logo.png";
+
+import {
+  clearSession,
+  getCurrentUser,
+  getAuthToken,
+  setCurrentUser,
+} from "../../shared/lib/storage.jsx";
 
 function UserIcon() {
-  /** Render user icon. */
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
       <path
@@ -19,7 +23,6 @@ function UserIcon() {
 }
 
 export default function AppLayout({ children }) {
-  /** Render app layout. */
   const navigate = useNavigate();
   const [user, setUser] = useState(getCurrentUser());
   const token = useMemo(() => getAuthToken(), []);
@@ -28,7 +31,6 @@ export default function AppLayout({ children }) {
     let cancelled = false;
 
     async function hydrateUser() {
-      /** Hydrate current user. */
       if (!token) return;
       if (user?.username) return;
 
@@ -46,7 +48,6 @@ export default function AppLayout({ children }) {
   }, [token, user]);
 
   function handleLogout() {
-    /** Handle logout. */
     clearSession();
     navigate("/auth?mode=login");
   }
@@ -54,9 +55,15 @@ export default function AppLayout({ children }) {
   return (
     <div className="page page--app">
       <header className="appTopbar">
-        <div className="appTopbar__left" role="button" tabIndex={0} onClick={() => navigate("/")}>
-          <div className="logoMark">M</div>
-          <div className="logoText">MailOps</div>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => navigate("/")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") navigate("/");
+          }}
+        >
+          <img className="nav__logo" src={logo} alt="MailOps" />
         </div>
 
         <div className="appTopbar__center">
@@ -67,10 +74,11 @@ export default function AppLayout({ children }) {
         </div>
 
         <div className="appTopbar__right">
-          <button className="iconCircle" type="button" onClick={() => navigate("/app/profile")}>
-            <UserIcon />
-          </button>
-          <button className="btn btn--ghost" type="button" onClick={handleLogout}>
+          <button
+            className="btn btn--ghost"
+            type="button"
+            onClick={handleLogout}
+          >
             Sair
           </button>
         </div>

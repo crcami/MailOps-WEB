@@ -1,21 +1,17 @@
-/** API client. */
-
 import { clearSession, getAuthToken } from "./storage.jsx";
 
-const DEFAULT_BASE_URL = "http://localhost:8000";
+const DEFAULT_BASE_URL = "http://localhost:5173";
 
 function getApiBaseUrl() {
-  /** Get API base URL. */
-  return import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL;
+  const raw = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+  return raw || DEFAULT_BASE_URL;
 }
 
 function getApiKey() {
-  /** Get API key. */
-  return import.meta.env.VITE_API_KEY || "";
+  return String(import.meta.env.VITE_PUBLIC_API_KEY || "").trim();
 }
 
 async function parseErrorMessage(response) {
-  /** Parse API error message. */
   try {
     const data = await response.json();
     if (typeof data?.detail === "string") return data.detail;
@@ -26,13 +22,21 @@ async function parseErrorMessage(response) {
   }
 }
 
-export async function apiRequest(path, options = {}) {
-  /** Execute an API request. */
+function buildUrl(path) {
   const baseUrl = getApiBaseUrl().replace(/\/+$/, "");
-  const url = `${baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${baseUrl}${cleanPath}`;
+}
+
+export async function apiRequest(path, options = {}) {
+  const url = buildUrl(path);
 
   const headers = new Headers(options.headers || {});
-  headers.set("X-API-Key", getApiKey());
+  const apiKey = getApiKey();
+
+  if (apiKey) {
+    headers.set("X-API-Key", apiKey);
+  }
 
   if (options.auth === true) {
     const token = getAuthToken();
@@ -65,12 +69,10 @@ export async function apiRequest(path, options = {}) {
 }
 
 export async function getJson(path, options = {}) {
-  /** GET JSON. */
   return apiRequest(path, { ...options, method: "GET" });
 }
 
 export async function postJson(path, payload, options = {}) {
-  /** POST JSON. */
   const headers = new Headers(options.headers || {});
   headers.set("Content-Type", "application/json");
 
@@ -83,10 +85,13 @@ export async function postJson(path, payload, options = {}) {
 }
 
 export async function postFormData(path, formData, options = {}) {
-  /** POST FormData. */
+  const headers = new Headers(options.headers || {});
+  headers.delete("Content-Type");
+
   return apiRequest(path, {
     ...options,
     method: "POST",
+    headers,
     body: formData,
   });
 }

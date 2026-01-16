@@ -1,10 +1,9 @@
-/** Auth service. */
+ 
 
 import { getJson, postJson } from "./apiClient.js";
 import { setAuthToken, setCurrentUser } from "./storage.jsx";
 
 export async function login(email, password) {
-  /** Login user. */
   const token = await postJson("/api/auth/login", { email, password });
   setAuthToken(token.access_token);
 
@@ -14,8 +13,7 @@ export async function login(email, password) {
   return token;
 }
 
-export async function register(username, email, password) {
-  /** Register user. */
+export async function register(username, email, password) {  
   const token = await postJson("/api/auth/register", { username, email, password });
   setAuthToken(token.access_token);
 
@@ -26,17 +24,14 @@ export async function register(username, email, password) {
 }
 
 export async function forgotPassword(email) {
-  /** Request password reset. */
   return postJson("/api/auth/forgot-password", { email });
 }
 
 export async function resetPassword(token, newPassword) {
-  /** Reset password. */
   return postJson("/api/auth/reset-password", { token, new_password: newPassword });
 }
 
 export async function safeFetchMe(fallback = {}) {
-  /** Fetch current user if endpoint exists. */
   try {
     const me = await getJson("/api/auth/me", { auth: true });
     return me;
@@ -51,3 +46,5 @@ export async function safeFetchMe(fallback = {}) {
     };
   }
 }
+
+

@@ -1,10 +1,7 @@
-/** Landing page. */
-
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../../shared/components/Navbar.jsx";
 
 export default function LandingPage() {
-  /** Render landing page. */
   const navigate = useNavigate();
 
   return (

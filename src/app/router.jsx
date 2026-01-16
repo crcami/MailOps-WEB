@@ -1,24 +1,22 @@
-/** App router. */
-
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import LandingPage from "../modules/marketing/pages/LandingPage.jsx";
 import AuthPage from "../modules/auth/pages/AuthPage.jsx";
 import ResetPasswordPage from "../modules/auth/pages/ResetPasswordPage.jsx";
 import AnalyzePage from "../modules/inbox/pages/AnalyzePage.jsx";
-import ProfilePage from "../modules/inbox/pages/ProfilePage.jsx";
 import { getAuthToken } from "../shared/lib/storage.jsx";
+import SessionTimeout from "../shared/components/SessionTimeout.jsx";
 
 function ProtectedRoute({ children }) {
-  /** Render protected route. */
   const token = getAuthToken();
   if (!token) return <Navigate to="/auth?mode=login" replace />;
   return children;
 }
 
 export default function AppRouter() {
-  /** Render app router. */
   return (
     <BrowserRouter>
+      <SessionTimeout />
+
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<AuthPage />} />
@@ -29,15 +27,6 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <AnalyzePage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/app/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
             </ProtectedRoute>
           }
         />

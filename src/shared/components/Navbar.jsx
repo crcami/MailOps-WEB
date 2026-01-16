@@ -1,9 +1,7 @@
-/** Navbar component. */
-
 import { useNavigate } from "react-router-dom";
+import logo from "../../assets/images/logo.png";
 
 export default function Navbar({ variant = "home" }) {
-  /** Render navbar. */
   const navigate = useNavigate();
 
   const isHome = variant === "home";
@@ -20,14 +18,13 @@ export default function Navbar({ variant = "home" }) {
           if (e.key === "Enter") navigate("/");
         }}
       >
-        <div className="logoMark">M</div>
-        <div className="logoText">MailOps</div>
+        <img className="nav__logo" src={logo} alt="MailOps" />
       </div>
 
       <div className="nav__actions">
         {isAuth && (
           <button
-            className="btn btn--ghost"
+            className="btn btn--outline"
             type="button"
             onClick={() => navigate("/")}
           >
@@ -38,7 +35,7 @@ export default function Navbar({ variant = "home" }) {
         {isHome && (
           <>
             <button
-              className="btn btn--ghost"
+              className="btn btn--outline"
               type="button"
               onClick={() => navigate("/auth?mode=login")}
             >

@@ -1,12 +1,10 @@
-/** Auth page. */
-
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AuthLayout from "../../../app/layouts/AuthLayout.jsx";
+import Notice from "../../../shared/components/Notice.jsx";
 import { forgotPassword, login, register } from "../../../shared/lib/auth.js";
 
 function EyeIcon({ open }) {
-  /** Render eye icon. */
   if (open) {
     return (
       <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -29,15 +27,27 @@ function EyeIcon({ open }) {
 }
 
 function isPasswordStrong(value) {
-  /** Check minimum password rules. */
   const hasUpper = /[A-Z]/.test(value);
   const hasLower = /[a-z]/.test(value);
   const hasDigit = /\d/.test(value);
   return value.length >= 8 && hasUpper && hasLower && hasDigit;
 }
 
+function mapAuthError(err, isLogin) {
+  const status = err?.status;
+
+  if (isLogin && status === 401) {
+    return "E-mail ou senha incorretos. Verifique seus dados e tente novamente.";
+  }
+
+  if (!isLogin && status === 409) {
+    return "Usuário já existe. Use outro e-mail ou faça login.";
+  }
+
+  return err?.message || "Falha na autenticação.";
+}
+
 export default function AuthPage() {
-  /** Render auth page. */
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
 
@@ -48,8 +58,6 @@ export default function AuthPage() {
 
   const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
 
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -62,67 +70,109 @@ export default function AuthPage() {
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
 
+  const [notice, setNotice] = useState(null);
+
   const isLogin = mode === "login";
 
+  useEffect(() => {
+    if (!notice) return undefined;
+
+    const t = window.setTimeout(() => setNotice(null), 6500);
+    return () => window.clearTimeout(t);
+  }, [notice]);
+
+  useEffect(() => {
+    const noticeMsg = params.get("notice");
+    const modeParam = (params.get("mode") || "login").toLowerCase();
+
+    if (!noticeMsg) return;
+    if (modeParam !== "login") return;
+
+    setNotice({ variant: "success", message: noticeMsg });
+
+    const nextParams = new URLSearchParams(params);
+    nextParams.delete("notice");
+    setParams(nextParams, { replace: true });
+  }, [params, setParams]);
+
+  function showNotice(variant, message) {
+    setNotice({ variant, message });
+  }
+
   function switchMode(next) {
-    /** Switch auth mode. */
     const newMode = next || (isLogin ? "register" : "login");
     setMode(newMode);
     setParams({ mode: newMode });
 
-    setError("");
-    setMessage("");
+    setNotice(null);
     setPassword("");
     setConfirmPassword("");
     setShowPassword(false);
     setShowConfirmPassword(false);
   }
 
+  function validateBeforeSubmit() {
+    if (!email.trim()) return "Informe um e-mail válido.";
+    if (!password) return "Informe sua senha.";
+
+    if (!isLogin) {
+      if (!username.trim()) return "Informe seu nome.";
+      if (!isPasswordStrong(password)) {
+        return "Senha inválida: mínimo 8 caracteres, incluindo maiúscula, minúscula, caractere especial e número.";
+      }
+      if (password !== confirmPassword) return "As senhas não coincidem.";
+    }
+
+    return null;
+  }
+
   async function handleSubmit(e) {
-    /** Handle submit. */
     e.preventDefault();
+    setNotice(null);
+
+    const validationError = validateBeforeSubmit();
+    if (validationError) {
+      showNotice("error", validationError);
+      return;
+    }
+
     setLoading(true);
-    setError("");
-    setMessage("");
 
     try {
-      if (!isLogin) {
-        if (!isPasswordStrong(password)) {
-          throw new Error(
-            "Senha inválida: mínimo 8 caracteres, incluindo maiúscula, minúscula e número."
-          );
-        }
-
-        if (password !== confirmPassword) {
-          throw new Error("As senhas não coincidem.");
-        }
-
-        await register(username.trim(), email.trim(), password);
-      } else {
+      if (isLogin) {
         await login(email.trim(), password);
+      } else {
+        await register(username.trim(), email.trim(), password);
       }
 
       navigate("/app/analyze");
     } catch (err) {
-      setError(err?.message || "Falha na autenticação.");
+      showNotice("error", mapAuthError(err, isLogin));
     } finally {
       setLoading(false);
     }
   }
 
   async function handleForgotPassword(e) {
-    /** Handle forgot password. */
     e.preventDefault();
+    setNotice(null);
+
+    if (!forgotEmail.trim()) {
+      showNotice("error", "Informe um e-mail válido.");
+      return;
+    }
+
     setLoading(true);
-    setError("");
-    setMessage("");
 
     try {
       const res = await forgotPassword(forgotEmail.trim());
-      setMessage(res?.message || "Se o e-mail existir, o link será enviado.");
+      showNotice(
+        "success",
+        res?.message || "Se o e-mail existir, o link será enviado."
+      );
       setForgotOpen(false);
     } catch (err) {
-      setError(err?.message || "Falha ao solicitar redefinição.");
+      showNotice("error", err?.message || "Falha ao solicitar redefinição.");
     } finally {
       setLoading(false);
     }
@@ -135,6 +185,12 @@ export default function AuthPage() {
 
   return (
     <AuthLayout>
+      <Notice
+        variant={notice?.variant}
+        message={notice?.message}
+        onClose={() => setNotice(null)}
+      />
+
       <div className="authCard">
         <div className="authCard__left">
           <div className="authCard__badge">BEM-VINDO</div>
@@ -152,7 +208,7 @@ export default function AuthPage() {
         <div className="authCard__right">
           <div className="authCard__header">{rightHeader}</div>
 
-          <form className="form" onSubmit={handleSubmit}>
+          <form className="form" onSubmit={handleSubmit} noValidate>
             {!isLogin && (
               <label className="field">
                 <span>Nome completo</span>
@@ -161,9 +217,7 @@ export default function AuthPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Seu nome"
                   autoComplete="username"
-                  minLength={3}
                   maxLength={60}
-                  required
                 />
               </label>
             )}
@@ -176,7 +230,6 @@ export default function AuthPage() {
                 placeholder="Seu e-mail"
                 type="email"
                 autoComplete="email"
-                required
               />
             </label>
 
@@ -189,9 +242,7 @@ export default function AuthPage() {
                   placeholder={isLogin ? "Sua senha" : "Crie uma senha"}
                   type={showPassword ? "text" : "password"}
                   autoComplete={isLogin ? "current-password" : "new-password"}
-                  minLength={8}
                   maxLength={72}
-                  required
                 />
 
                 <button
@@ -206,7 +257,8 @@ export default function AuthPage() {
 
               {!isLogin && (
                 <div className="passwordHint">
-                  Mínimo 8 caracteres, incluindo maiúscula, minúscula e número.
+                  Mínimo 8 caracteres, incluindo maiúscula, minúscula, caractere
+                  especial e número.
                 </div>
               )}
             </label>
@@ -221,9 +273,7 @@ export default function AuthPage() {
                     placeholder="Repita a senha"
                     type={showConfirmPassword ? "text" : "password"}
                     autoComplete="new-password"
-                    minLength={8}
                     maxLength={72}
-                    required
                   />
 
                   <button
@@ -252,9 +302,6 @@ export default function AuthPage() {
                 Esqueceu senha?
               </button>
             )}
-
-            {error && <div className="alert alert--error">{error}</div>}
-            {message && <div className="alert alert--info">{message}</div>}
 
             <button
               className="btn btn--primary btn--full"
@@ -292,22 +339,24 @@ export default function AuthPage() {
           </form>
         </div>
 
-        <button
-          className="authToggleSingle"
-          type="button"
-          onClick={() => switchMode()}
-          aria-label="Alternar entre login e cadastro"
-          title="Alternar"
-        >
-          ↔
-        </button>
+        <div className="authToggle" aria-hidden="false">
+          <button
+            className="authToggleSingle"
+            type="button"
+            onClick={() => switchMode()}
+            aria-label="Toggle mode"
+            title="Alternar"
+          >
+            ↔
+          </button>
+        </div>
       </div>
 
       {forgotOpen && (
         <div className="modalBackdrop" role="dialog" aria-modal="true">
           <div className="modal">
             <div className="modal__title">Recuperar senha</div>
-            <form className="form" onSubmit={handleForgotPassword}>
+            <form className="form" onSubmit={handleForgotPassword} noValidate>
               <label className="field">
                 <span>E-mail</span>
                 <input
@@ -315,7 +364,6 @@ export default function AuthPage() {
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="seu@email.com"
                   type="email"
-                  required
                 />
               </label>
 
