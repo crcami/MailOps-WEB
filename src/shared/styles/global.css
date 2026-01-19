@@ -110,7 +110,7 @@ button:focus-visible {
   min-height: 100vh;
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.25)),
-    url("src/assets/images/background-landing.png");
+    url("/src/assets/images/background-landing.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
